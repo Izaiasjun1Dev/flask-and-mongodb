@@ -22,7 +22,7 @@ app.config['MONGO_URI'] = os.environ.get("URI")
 
 mongo = PyMongo(app)
 
-
+# TEST: localhost:5000/store
 @app.route('/store/')
 def all_store():
     """Returns all stores"""
@@ -37,7 +37,7 @@ def all_store():
         })
     return jsonify({"results": payload})
 
-
+# TEST: localhost:5000/store/5f34642a745b8c52cf710746
 @app.route('/store/<filters>')
 def store_per_filter(filters):
     """Returns stories per filters
@@ -72,7 +72,7 @@ def store_per_filter(filters):
 
     return jsonify({"Results": payload})
 
-
+# TEST: localhost:5000/products/promotions
 @app.route('/products/promotions')
 def products_per_promotions():
     """returns all products if contains discount"""
@@ -108,7 +108,7 @@ def products_per_promotions():
 
     return jsonify({"Results": payload})
 
-
+# TEST: localhost:5000/products
 @app.route('/products')
 def all_products():
     """Returns all products"""
@@ -142,7 +142,7 @@ def all_products():
         "results": payload
     })
 
-
+# TEST: localhost:5000/products/7896065880106
 @app.route('/products/<filters>')
 def products_per_filters(filters):
     """Returns products filtered by the 'category', 
