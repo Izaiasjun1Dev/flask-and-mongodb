@@ -1,19 +1,18 @@
+import os
 from flask_pymongo import PyMongo
 from flask import Flask, jsonify
-import os
-
+import pandas as pd
 from dotenv import (
     load_dotenv, find_dotenv
 )
-load_dotenv(find_dotenv())
 
+load_dotenv(find_dotenv())
 
 def convert_value(v):
     """torna capaz a conversão de variaveis 
     em float desde que tenha o formato (00,00)"""
     v = '.'.join(v.split(','))
     return float(v)
-
 
 app = Flask(__name__)
 
@@ -45,6 +44,7 @@ def store_per_filter(filters):
 
     stores = mongo.db.store
     # query per filter
+    # Thinking on the client side he can filter by the name of the store
     results = stores.find({
         "$or": [
             {
@@ -63,7 +63,7 @@ def store_per_filter(filters):
     payload = []
 
     for s in results:
-        # Itera todos os doc de acordo com os filtros passados
+        # Iterate all docs according to past filters
         payload.append({
             "name": s["name"],
             "typestore": s["typestore"],
@@ -109,14 +109,37 @@ def products_per_promotions():
     return jsonify({"Results": payload})
 
 # TEST: localhost:5000/products
-@app.route('/products')
+@app.route('/products/')
 def all_products():
     """Returns all products"""
     products = mongo.db.products
-    payload = []
-    for p in products.find():
 
-        # filtragem dos dados para desconto
+    q = products.find()
+
+    que = products.aggregate([
+        # stage 1
+        {
+            "$group": {
+                "_id": "$category"
+            }
+        }
+    ])
+
+    category_qtd = []
+
+    for i in que:
+        category_qtd.append(i["_id"])
+
+    categories_distinct = pd.Series(category_qtd).drop_duplicates().to_list()
+
+    payload = [{
+        "total_categories": len(categories_distinct),
+        "total_products": q.count(),
+    }]
+    
+    for p in q:
+
+        # Filtering data for discount
         if p["price"] != p["real_price"]:
             discount = convert_value(
                 p["real_price"]) - convert_value(p["price"])
@@ -152,7 +175,7 @@ def products_per_filters(filters):
 
     # query of filter
     q = products.find({
-        "$or": [{
+        "$or": [
             {
                 "category": {"$eq": filters}
             },
@@ -162,7 +185,10 @@ def products_per_filters(filters):
             {
                 "typestore": {"$eq": filters}
             },
-        }]
+            {
+                "typestorename": {"$eq": filters}
+            }
+        ]
     })
 
     # pipeline for existing categories
@@ -181,7 +207,6 @@ def products_per_filters(filters):
         {
             "$group": {
                 "_id": "$category"
-
             }
         }
     ])
@@ -191,8 +216,11 @@ def products_per_filters(filters):
     for i in que:
         category_qtd.append(i["_id"])
 
+
+    categories_distinct = pd.Series(category_qtd).drop_duplicates().to_list()
+
     payload = [{
-        "total_categories": len(category_qtd),
+        "total_categories": len(categories_distinct),
         "total_products": q.count(),
     }]
 
@@ -206,18 +234,20 @@ def products_per_filters(filters):
             discount = 0
 
         payload.append({
-            "products": [{"ean": p['ean'],
-                          "category": p['category'],
-                          "name": p['name'],
-                          "price": convert_value(p['price']),
-                          "quantity": [],
-                          "discount": round(discount, 1),
-                          "real_price": convert_value(p['real_price']),
-                          "store_id": p['store_id'],
-                          "sale_type": p['sale_type'],
-                          "unit_type": [],
-                          "typestore": p['typestore'],
-                          "typestorename": p['typestorename'], }]
+            "products": {
+                "ean": p['ean'],
+                "category": p['category'],
+                "name": p['name'],
+                "price": convert_value(p['price']),
+                "quantity": [],
+                "discount": round(discount, 1),
+                "real_price": convert_value(p['real_price']),
+                "store_id": p['store_id'],
+                "sale_type": p['sale_type'],
+                "unit_type": [],
+                "typestore": p['typestore'],
+                "typestorename": p['typestorename']
+            }
         })
 
     return jsonify({"results": payload})
