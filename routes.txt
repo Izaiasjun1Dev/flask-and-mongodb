@@ -1,0 +1,11 @@
+rotas to test app
+
+# TEST: http://52.87.157.95:5000/store
+
+# TEST: http://52.87.157.95:5000/store/5f34642a745b8c52cf710746
+
+# TEST: http://52.87.157.95:5000/products/promotions
+
+# TEST: http://52.87.157.95:5000/products
+
+# TEST: http://52.87.157.95:5000/products/7896065880106
